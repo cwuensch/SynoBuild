@@ -1,0 +1,30 @@
+FROM ubuntu:latest
+
+ARG DSM_VERSION=6.1
+
+RUN apt-get update && apt-get install -y python3 wget tar && ln -s /usr/bin/python3 /usr/local/bin/python 
+
+RUN ["/bin/sh", "-c", "mkdir -p /toolkit/build_env/ds.x64-${DSM_VERSION} /toolkit/source"] 
+COPY pkgscripts-ng/ /toolkit/pkgscripts-ng/
+
+RUN sed -i 's/title = "Link Project"/title = "Copy Project"/g' /toolkit/pkgscripts-ng/PkgCreate.py \
+ && sed -i 's/print("Link %s -> %s"/print("Copy %s -> %s"/g' /toolkit/pkgscripts-ng/include/python/link_project.py \
+ && sed -i 's/-al/-a/g' /toolkit/pkgscripts-ng/include/python/link_project.py
+
+WORKDIR /toolkit
+
+#RUN ["/bin/sh", "-c", "pkgscripts-ng/EnvDeploy -t toolkit_tarballs -v ${DSM_VERSION} -p rtd1296"]
+
+RUN ["/bin/sh", "-c", "wget -qO- https://downloads.sourceforge.net/project/dsgpl/toolkit/DSM${DSM_VERSION}/base_env-${DSM_VERSION}.txz | tar -xJhv -C build_env/ds.x64-${DSM_VERSION} \
+                       && cp -al build_env/ds.x64-${DSM_VERSION} build_env/ds.rtd1296-${DSM_VERSION}"]
+
+RUN ["/bin/sh", "-c", "wget -qO- https://downloads.sourceforge.net/project/dsgpl/toolkit/DSM${DSM_VERSION}/ds.x64-${DSM_VERSION}.env.txz | tar -xJhv -C build_env/ds.x64-${DSM_VERSION}"]
+RUN ["/bin/sh", "-c", "wget -qO- https://downloads.sourceforge.net/project/dsgpl/toolkit/DSM${DSM_VERSION}/ds.x64-${DSM_VERSION}.dev.txz | tar -xJhv -C build_env/ds.x64-${DSM_VERSION}"]
+
+RUN ["/bin/sh", "-c", "wget -qO- https://downloads.sourceforge.net/project/dsgpl/toolkit/DSM${DSM_VERSION}/ds.rtd1296-${DSM_VERSION}.env.txz | tar -xJhv -C build_env/ds.rtd1296-${DSM_VERSION}"]
+RUN ["/bin/sh", "-c", "wget -qO- https://downloads.sourceforge.net/project/dsgpl/toolkit/DSM${DSM_VERSION}/ds.rtd1296-${DSM_VERSION}.dev.txz | tar -xJhv -C build_env/ds.rtd1296-${DSM_VERSION}"]
+
+VOLUME toolkit/source
+
+ENTRYPOINT ["pkgscripts-ng/PkgCreate.py"]
+#CMD ["-I RecStrip"]
